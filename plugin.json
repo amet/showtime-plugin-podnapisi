@@ -1,0 +1,14 @@
+{
+  "type": "ecmascript",
+  "id": "podnapisi",
+  "file": "podnapisi.js",
+  "category": "subtitles",
+  "showtimeVersion": "4.8",
+  "version": "1.0",
+  "author": "amet",
+  "title": "Podnapisi.NET",
+  "icon": "logo.jpg",
+  "synopsis": "Subtitle database",
+  "homepage":"http://www.podnapisi.net/",
+  "description":"Installing this plugin will make Showtime automatically search for subtitles online at podnapisi.net when playing a movie"
+}
