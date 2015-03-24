@@ -17,11 +17,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+ var XML = require('showtime/xml');
+
 (function(plugin) {
 
-  var APIURL = "http://beta.podnapisi.net/ppodnapisi/search?tbsl=1&sK={0}&sJ={1}&sY={2}&sTS={3}&sTE={4}&sMH={5}&sXML=1&lang=0";
-  var XML = require('showtime/xml');
-  var myXML = "";
+  var APIURL       = "http://beta.podnapisi.net/ppodnapisi/search?tbsl=1&sK={0}&sJ={1}&sY={2}&sTS={3}&sTE={4}&sMH={5}&sXML=1&lang=0";
+  var DOWNLOAD_URL = "http://beta.podnapisi.net/subtitles/{0}/download";
+  var myXML        = "";
 
   String.prototype.format = function() {
     var s = this,
@@ -38,20 +40,8 @@
   }
 
   function downloadXML(url) {
-
-    var testURL = "http://www.podnapisi.net/ppodnapisi/search?tbsl=1&sK=Everly&sJ=2,36&sY=2014&sTS=&sTE=&sMH=9193fa582c8ba47f,sublight:020000b25c675a26b71e868aebc2f37d8ebb8ed0,sublight:375d5fc33ca4eb9d576683ec785119eb&sXML=1&lang=0";
-    var v = showtime.httpReq(unescape(testURL)).toString();
-    var out = v.replace(/\<\!DOCTYPE[^\>\[]+(\[[^\]]+)+[^>]+\>/g, '');
-    trace(out);
-    myXML = XML.parse(out);
-
-    for(i in myXML.subtitle) {
-     print(v + " = " + myXML.subtitle[i]);
-    }
-    // var items = XML.('subtitle');
-
-    trace(myXML.results.subtitle);
-
+    var v = showtime.httpReq(unescape(url));
+    return XML.parse(v);
   }
 
 
@@ -73,84 +63,38 @@
       episode = req.episode;
     }
 
+    trace('year: ' + req.year);
     if (req.year > 0) {
-    year = req.year;
+      year = req.year;
     }
 
-    lang = 2; // testing only
+    lang = "2"; // testing only
     var url = APIURL.format(req.title,lang,year,season,episode,req.opensubhash);
 
     trace(url);
-    downloadXML(url);
-    trace(myXML);
+    trace(req.opensubhash);
+    myXML = downloadXML(url);
 
- //    // Build a opensubtitle query based on request from Showtime
+    var subs = myXML.results.filterNodes('subtitle');
+    for(var i = 0; i < subs.length; i++) {
+      var sub = subs[i];
+      var score = 0;
+      var hash = "Not Matched";
 
- //    if(req.filesize > 0 && req.opensubhash !== undefined) {
- //      queries.push({
-	// sublanguageid: lang,
-	// moviehash: req.opensubhash,
-	// moviebytesize: req.filesize.toString()
- //      });
- //    }
-      
- //    if(req.imdb && req.imdb.indexOf('tt') == 0) {
- //      queries.push({
-	// sublanguageid: lang,
-	// imdbid: req.imdb.substring(2)
- //      });
- //    } else if(req.title) {
- //      var q = {
-	// sublanguageid: lang,
-	// query: req.title
- //      };
+      if (sub.exactHashes == req.opensubhash || sub.exactHashes == "osh:" + req.opensubhash) {
+        hash = "Hash Matched";
+        score++; // matches by file hash is better        
+      }
 
- //      if(req.season > 0 && req.episode > 0) {
-	// q.season = req.season;
-	// q.episode = req.episode;
- //      }
 
- //      queries.push(q);
- //    }
-
- //    // Loop so we can retry once (relogin) if something fails
- //    // This typically happens if the token times out
-
- //    for(var retry = 0; retry < 2; retry++) {
- //      login(retry);
-
- //      var r = showtime.xmlrpc(APIURL, "SearchSubtitles", token, queries);
-    
- //      if(r[0].status == '200 OK' && typeof(r[0].data == 'object')) {
-	// var set = {}; // We can get same subtitle multiple times, so keep track
-	// var cnt = 0;
- //        var len = r[0].data.length;
-	// for(var i = 0; i < len; i++) {
-
-	//   var sub = r[0].data[i];
-	//   var url = sub.SubDownloadLink;
-	//   if(url in set)
-	//     continue;
-
-	//   set[url] = true;
-
-	//   var score = 0;
-	//   if (sub.MatchedBy == 'moviehash') 
-	//     score++; // matches by file hash is better
-	  
-	//   req.addSubtitle(url, sub.SubFileName, sub.SubLanguageID,
-	// 		  sub.SubFormat,
-	// 		  'podnapisi (' + sub.MatchedBy + ')',
-	// 		  score);
-	//   cnt++;
-	// }
- //      	trace('Added ' + cnt + ' subtitles');
-
-	// return;
- //      } else {
- //      	trace('Query failed: ' + r[0].status);
- //      }
- //    }
+      var test_url = "";
+      req.addSubtitle(DOWNLOAD_URL.format(subs[i].pid),
+                      sub.title,
+                      sub.languageName,
+                      sub.format,
+                      'podnapisi (' + hash + ')',
+                      score);
+    }
   });
 
 })(this);
