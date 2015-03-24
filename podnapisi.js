@@ -17,7 +17,59 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- var XML = require('showtime/xml');
+var XML = require('showtime/xml');
+
+var langTranslate = {
+
+    "alb":"29",
+    "ara":"12",
+    "arm":"0",
+    "bos":"10",
+    "bul":"33",
+    "cat":"53",
+    "chi":"17",
+    "hrv":"38",
+    "cze":"7",
+    "dan":"24",
+    "dut":"23",
+    "eng":"2",
+    "est":"20",
+    "per":"52",
+    "fin":"31",
+    "fre":"8",
+    "ger":"5",
+    "ell":"16",
+    "heb":"22",
+    "hin":"42",
+    "hun":"15",
+    "ice":"6",
+    "ind":"0",
+    "ita":"9",
+    "jpn":"11",
+    "kor":"4",
+    "lav":"21",
+    "lit":"0",
+    "mac":"35",
+    "may":"0",    
+    "nor":"3",
+    "pol":"26",
+    "por":"32",
+    "pob":"48",
+    "rum":"13",
+    "rus":"27",
+    "scc":"36",
+    "slo":"37",
+    "slv":"1",
+    "spa":"28",
+    "swe":"25",
+    "tha":"0",
+    "tur":"30",
+    "ukr":"46",
+    "vie":"51",
+    "bos":"10",
+    "per":"52",
+    "ser":"36"
+};
 
 (function(plugin) {
 
@@ -44,15 +96,14 @@
     return XML.parse(v);
   }
 
-
-
   plugin.addSubtitleProvider(function(req) {
 
-    var queries = [];
-
-    // Get list of user preferred languages for subs
-    var lang = showtime.getSubtitleLanguages().join(',');
-
+    var lang = [];
+    var languages = showtime.getSubtitleLanguages();
+    for(var l = 0; l < languages.length; l++) {
+      lang.push(langTranslate[languages[l]]);
+      break; // break here for one language, API issue on podnapisi
+    }
 
     season  = "";
     episode = "";
@@ -68,8 +119,7 @@
       year = req.year;
     }
 
-    lang = "2"; // testing only
-    var url = APIURL.format(req.title,lang,year,season,episode,req.opensubhash);
+    var url = APIURL.format(req.title,lang.join(','),year,season,episode,req.opensubhash);
 
     trace(url);
     trace(req.opensubhash);
@@ -86,8 +136,6 @@
         score++; // matches by file hash is better        
       }
 
-
-      var test_url = "";
       req.addSubtitle(DOWNLOAD_URL.format(subs[i].pid),
                       sub.title,
                       sub.languageName,
